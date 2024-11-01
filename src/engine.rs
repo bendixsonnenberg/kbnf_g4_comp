@@ -89,7 +89,21 @@ impl Engine {
         vocabulary: Vocabulary,
     ) -> Result<Engine, CreateEngineError> {
         let config = Config::default();
-        Self::with_config(kbnf_syntax_grammar_str, vocabulary, config)
+        let grammar =
+            utils::construct_kbnf_syntax_grammar(kbnf_syntax_grammar_str, config.clone().internal_config().clone())?;
+        
+        Self::with_config_and_grammar(grammar, vocabulary, config)
+    }
+
+    /// .
+    /// Generate an engine from a Simplified Grammar.
+    /// Use the kbnf_syntax crate to generate the grammar
+    ///
+    /// # Errors
+    ///
+    /// This function will return an [`CreateEngineError`] if the grammar is empty.
+    pub fn new_with_grammar(grammar: SimplifiedGrammar, vocabulary: Vocabulary) -> Result<Engine, CreateEngineError>{
+        Self::with_config_and_grammar(grammar, vocabulary, Config::default())
     }
 
     fn check_id_length(grammar: &SimplifiedGrammar, value: usize) -> bool {
@@ -111,16 +125,14 @@ impl Engine {
     /// # Errors
     ///
     /// Returns an [`CreateEngineError`] when the grammar is empty or the grammar and/or config's value range is not supported by the Engine.
-    pub fn with_config(
-        kbnf_syntax_grammar_str: &str,
+    pub fn with_config_and_grammar(
+        grammar: SimplifiedGrammar,
         vocabulary: Vocabulary,
         config: Config,
     ) -> Result<Engine, CreateEngineError> {
         let tsp = config.expected_output_length;
         let regex_config = config.regex_config;
         let internal_config = config.internal_config();
-        let grammar =
-            utils::construct_kbnf_syntax_grammar(kbnf_syntax_grammar_str, internal_config.clone())?;
         if grammar.is_empty() {
             return Err(CreateEngineError::EmptyGrammarError);
         }
